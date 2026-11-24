@@ -4,7 +4,7 @@
   const els = Object.fromEntries(["loading", "error-state", "error-detail", "empty-state", "table-wrap", "table-footer", "vehicle-rows", "total-count", "attention-count", "healthy-count", "nav-count", "result-count", "updated-label", "search", "status-filter", "vehicle-dialog", "vehicle-form", "form-error", "save-button", "toast"].map(id => [id, document.getElementById(id)]));
   let vehicles = [];
   let toastTimer;
-  const configured = () => config.supabaseUrl && config.supabaseAnonKey && !config.supabaseUrl.includes(""https://yhmkfrtccabijmhmboxx.supabase.co") && !config.supabaseAnonKey.includes("sb_publishable_00APsTAiRmD6fkFUjNi6UA_VLw17GtU");
+  const configured = () => config.supabaseUrl && config.supabaseAnonKey && !config.supabaseUrl.includes("https://yhmkfrtccabijmhmboxx.supabase.co") && !config.supabaseAnonKey.includes("sb_publishable_00APsTAiRmD6fkFUjNi6UA_VLw17GtU");
   // Publishable keys (sb_publishable_...) are API keys, not JWTs. Send them in
   // apikey only; putting one in Authorization: Bearer can make reads fail with Invalid JWT.
   const api = (method, body) => fetch(`${config.supabaseUrl}/rest/v1/${tableName}${method === "GET" ? "?select=*" : ""}`, { method, headers: { apikey: config.supabaseAnonKey, Accept: "application/json", ...(body ? { "Content-Type": "application/json", Prefer: "return=representation" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
