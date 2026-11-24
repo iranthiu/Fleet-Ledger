@@ -1,4 +1,5 @@
 (() => {
+  window.FLEET_APP_STARTED = true;
   const config = window.FLEET_CONFIG || {};
   const tableName = "vehicles";
   const els = Object.fromEntries(["loading", "error-state", "error-detail", "empty-state", "table-wrap", "table-footer", "vehicle-rows", "total-count", "attention-count", "healthy-count", "nav-count", "result-count", "updated-label", "search", "status-filter", "vehicle-dialog", "vehicle-form", "form-error", "save-button", "toast"].map(id => [id, document.getElementById(id)]));

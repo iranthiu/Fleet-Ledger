@@ -11,7 +11,26 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script src="config.js"></script>
-    <script defer src="app.js?v=2"></script>
+    <script>
+      window.FLEET_APP_STARTED = false;
+      window.showFleetScriptError = function (message) {
+        const loading = document.getElementById("loading");
+        const error = document.getElementById("error-state");
+        const detail = document.getElementById("error-detail");
+        if (loading) loading.hidden = true;
+        if (error) error.hidden = false;
+        if (detail) detail.textContent = message;
+      };
+      window.addEventListener("error", function (event) {
+        if (event.message) window.showFleetScriptError(`Fleet app JavaScript error: ${event.message}`);
+      });
+      window.setTimeout(function () {
+        if (!window.FLEET_APP_STARTED) {
+          window.showFleetScriptError("app.js did not start. Check that app.js is beside index.html in the published repository, then hard refresh the page.");
+        }
+      }, 8000);
+    </script>
+    <script defer src="app.js?v=4" onerror="window.showFleetScriptError('Could not load app.js. Check that app.js is in the repository root beside index.html.')"></script>
   </head>
   <body>
     <div class="shell">
