@@ -6,7 +6,7 @@ A responsive fleet register for tracking insurance expiry, next service date, re
 
 1. Create a Supabase project at [supabase.com](https://supabase.com/).
 2. In the project dashboard, open **SQL Editor**, paste in `supabase-setup.sql`, and run it.
-3. In **Project Settings → API**, copy the Project URL and the `anon` (publishable) key.
+3. In **Project Settings → API Keys** (or the project’s **Connect** dialog), copy the Project URL and the **publishable key** (starts with `sb_publishable_`). The app sends this key in the `apikey` header; it is not a user JWT.
 4. Open `config.js` and replace `YOUR_PROJECT_ID` and `YOUR_SUPABASE_ANON_KEY` with those values.
 
 The database policies allow anyone on the internet to read vehicle details and add records without signing in. The app does not provide edit or delete controls. Do not store sensitive personal information in this public fleet register.

@@ -5,7 +5,9 @@
   let vehicles = [];
   let toastTimer;
   const configured = () => config.supabaseUrl && config.supabaseAnonKey && !config.supabaseUrl.includes("YOUR_PROJECT_ID") && !config.supabaseAnonKey.includes("YOUR_SUPABASE_ANON_KEY");
-  const api = (method, body) => fetch(`${config.supabaseUrl}/rest/v1/${tableName}${method === "GET" ? "?select=*" : ""}`, { method, headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${config.supabaseAnonKey}`, "Content-Type": "application/json", Prefer: method === "POST" ? "return=representation" : "" }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  // Publishable keys (sb_publishable_...) are API keys, not JWTs. Send them in
+  // apikey only; putting one in Authorization: Bearer can make reads fail with Invalid JWT.
+  const api = (method, body) => fetch(`${config.supabaseUrl}/rest/v1/${tableName}${method === "GET" ? "?select=*" : ""}`, { method, headers: { apikey: config.supabaseAnonKey, Accept: "application/json", ...(body ? { "Content-Type": "application/json", Prefer: "return=representation" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const dateValue = s => s ? new Date(`${s}T00:00:00`) : null;
   const dayDiff = s => { const d = dateValue(s); if (!d) return null; const now = new Date(); now.setHours(0,0,0,0); return Math.round((d - now) / 86400000); };
   const formatted = s => s ? dateValue(s).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}) : "—";
@@ -22,7 +24,7 @@
     els["updated-label"].textContent = `Last refreshed ${new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}`;
   }
   function showError(message) { els.loading.hidden = true; els["table-wrap"].hidden = true; els["table-footer"].hidden = true; els["empty-state"].hidden = true; els["error-state"].hidden = false; els["error-detail"].textContent = message; els["total-count"].textContent = "—"; els["attention-count"].textContent = "—"; els["healthy-count"].textContent = "—"; }
-  async function load() { els.loading.hidden = false; els["error-state"].hidden = true; if (!configured()) return showError("Add your Supabase project URL and anon key in config.js, then reload this page."); try { const r = await api("GET"); if (!r.ok) throw new Error((await r.json()).message || `Database returned ${r.status}`); vehicles = await r.json(); vehicles.sort((a,b)=>String(a.registration).localeCompare(String(b.registration))); render(); } catch(e) { showError(e.message || "Check your connection and Supabase settings."); } }
+  async function load() { els.loading.hidden = false; els["error-state"].hidden = true; if (!configured()) return showError("Add your Supabase project URL and publishable key in config.js, then reload this page."); try { const r = await api("GET"); if (!r.ok) { const problem = await r.json().catch(() => ({})); throw new Error([problem.message || `Database returned HTTP ${r.status}`, problem.hint].filter(Boolean).join(" — ")); } vehicles = await r.json(); if (!Array.isArray(vehicles)) throw new Error("The database returned an unexpected response. Check the vehicles table and Supabase API settings."); vehicles.sort((a,b)=>String(a.registration).localeCompare(String(b.registration))); render(); } catch(e) { showError(e.message || "Could not load vehicle records. Check your connection and Supabase settings."); } }
   function toast(message,error=false) { els.toast.textContent=message; els.toast.className=`toast show${error?" error":""}`; clearTimeout(toastTimer); toastTimer=setTimeout(()=>els.toast.className="toast",3200); }
   function openDialog() { els["vehicle-form"].reset(); els["form-error"].hidden=true; els["vehicle-dialog"].showModal(); }
   ["open-add","empty-add"].forEach(id=>document.getElementById(id).addEventListener("click",openDialog)); ["close-dialog","cancel-dialog"].forEach(id=>document.getElementById(id).addEventListener("click",()=>els["vehicle-dialog"].close()));
