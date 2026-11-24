@@ -1,75 +1,91 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f3f5f4" />
-    <meta name="description" content="A shared fleet dashboard for vehicle compliance and service dates." />
-    <title>Fleet Ledger</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="config.js"></script>
-    <script>
-      window.FLEET_APP_STARTED = false;
-      window.showFleetScriptError = function (message) {
-        const loading = document.getElementById("loading");
-        const error = document.getElementById("error-state");
-        const detail = document.getElementById("error-detail");
-        if (loading) loading.hidden = true;
-        if (error) error.hidden = false;
-        if (detail) detail.textContent = message;
-      };
-      window.addEventListener("error", function (event) {
-        if (event.message) window.showFleetScriptError(`Fleet app JavaScript error: ${event.message}`);
-      });
-      window.setTimeout(function () {
-        if (!window.FLEET_APP_STARTED) {
-          window.showFleetScriptError("app.js did not start. Check that app.js is beside index.html in the published repository, then hard refresh the page.");
-        }
-      }, 8000);
-    </script>
-    <script defer src="app.js?v=4" onerror="window.showFleetScriptError('Could not load app.js. Check that app.js is in the repository root beside index.html.')"></script>
-  </head>
-  <body>
-    <div class="shell">
-      <aside class="sidebar">
-        <a class="brand" href="#" aria-label="Fleet Ledger home"><span class="brand-mark">F</span><span>fleet<span class="brand-light">ledger</span></span></a>
-        <div class="workspace-label">WORKSPACE</div>
-        <button class="nav-item active" type="button"><span class="nav-icon">▦</span> Fleet overview <span class="nav-count" id="nav-count">0</span></button>
-        <div class="sidebar-bottom"><div class="side-status"><span class="pulse"></span><span>Shared fleet workspace</span></div><div class="side-foot">VEHICLE OPERATIONS<br /><span>Fleet register</span></div></div>
-      </aside>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f3f5f4" />
+  <meta name="description" content="Fleet operations, service history, and compliance dates." />
+  <title>Fleet Ledger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="config.js"></script>
+  <script defer src="app.js?v=enhanced-1"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">F</span><span>fleet<span class="brand-light">ledger</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <div class="nav-stack">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span> Overview &amp; compliance</button>
+        <button class="nav-item" data-view="history"><span class="nav-icon">↻</span> Service history <span class="nav-count" id="service-count">0</span></button>
+        <button class="nav-item" data-view="documents"><span class="nav-icon">▱</span> Document vault <span class="nav-count" id="document-count">0</span></button>
+      </div>
+      <div class="sidebar-bottom"><div class="side-status"><span class="pulse"></span><span>Shared fleet workspace</span></div><div class="side-foot">VEHICLE OPERATIONS<br /><span>Fleet register</span></div></div>
+    </aside>
 
-      <main class="main">
-        <header class="topbar"><div class="crumb">Fleet management <span>/</span> <b>Overview</b></div><div class="top-right"><span class="live-dot"></span><span>Live data</span><span class="avatar">FL</span></div></header>
-        <section class="page">
-          <div class="heading-row"><div><div class="eyebrow">YOUR FLEET AT A GLANCE</div><h1>Fleet overview</h1><p class="subtitle">Keep every vehicle, date, and document in one place.</p></div><button class="primary-button" id="open-add"><span>＋</span> Add vehicle</button></div>
+    <main class="main">
+      <header class="topbar"><div class="crumb">Fleet management <span>/</span> <b id="breadcrumb-view">Overview</b></div><div class="top-right"><span class="live-dot"></span><span>Live data</span><span class="avatar">FL</span></div></header>
+      <section class="page">
+        <div class="heading-row"><div><div class="eyebrow">FLEET OPERATIONS</div><h1 id="page-title">Overview &amp; compliance</h1><p class="subtitle">Vehicle health, service planning, and statutory dates in one place.</p></div><div class="page-actions"><label class="vehicle-picker"><span>ACTIVE VEHICLE</span><select id="vehicle-select" aria-label="Select vehicle"><option value="">Loading fleet…</option></select></label><button class="primary-button" id="open-vehicle"><span>＋</span> Add vehicle</button></div></div>
 
-          <section class="summary-grid" aria-label="Fleet summary">
-            <article class="summary-card"><div class="summary-top"><span class="summary-label">Total vehicles</span><span class="stat-icon blue">▰</span></div><div class="summary-value" id="total-count">—</div><div class="summary-note">In your fleet register</div></article>
-            <article class="summary-card"><div class="summary-top"><span class="summary-label">Needs attention</span><span class="stat-icon amber">◷</span></div><div class="summary-value" id="attention-count">—</div><div class="summary-note">Expired or due in 30 days</div></article>
-            <article class="summary-card"><div class="summary-top"><span class="summary-label">Up to date</span><span class="stat-icon green">✓</span></div><div class="summary-value" id="healthy-count">—</div><div class="summary-note">All tracked dates current</div></article>
-          </section>
+        <div class="summary-grid four-cards" id="health-cards">
+          <article class="summary-card"><div class="summary-top"><span class="summary-label">Active vehicle health</span><span class="stat-icon green">✓</span></div><div class="summary-value compact" id="health-value">—</div><div class="summary-note" id="health-note">Select a vehicle</div></article>
+          <article class="summary-card"><div class="summary-top"><span class="summary-label">Next statutory expiry</span><span class="stat-icon amber">◷</span></div><div class="summary-value compact" id="expiry-value">—</div><div class="summary-note" id="expiry-note">Insurance, licence, or emissions</div></article>
+          <article class="summary-card"><div class="summary-top"><span class="summary-label">Next service target</span><span class="stat-icon blue">⚒</span></div><div class="summary-value compact" id="service-target-value">—</div><div class="summary-note" id="service-target-note">Mileage or date trigger</div></article>
+          <article class="summary-card"><div class="summary-top"><span class="summary-label">Current odometer</span><button class="inline-button" id="open-odometer">Update km →</button></div><div class="summary-value compact" id="odometer-value">—</div><div class="summary-note" id="odometer-note">Latest recorded reading</div></article>
+        </div>
 
-          <section class="table-panel">
-            <div class="table-heading"><div><h2>Vehicle register</h2><p>Insurance, service, licence, and emissions dates</p></div><div class="table-tools"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search vehicles…" aria-label="Search vehicles" /></label><select id="status-filter" aria-label="Filter by status"><option value="all">All vehicles</option><option value="attention">Needs attention</option><option value="current">Up to date</option></select></div></div>
-            <div id="loading" class="state-message"><span class="spinner"></span> Loading your fleet…</div>
-            <div id="error-state" class="state-message error-state" hidden><span class="error-mark">!</span><div><b>Couldn’t connect to the fleet database</b><br /><span id="error-detail">Check the Supabase settings in config.js and try again.</span><br /><button class="text-button" id="retry">Try again</button></div></div>
-            <div id="empty-state" class="empty-state" hidden><div class="empty-illustration">▱</div><h3>No vehicles yet</h3><p>Add your first vehicle to start tracking key dates.</p><button class="primary-button small" id="empty-add">＋ Add vehicle</button></div>
-            <div class="table-wrap" id="table-wrap" hidden><table><thead><tr><th>VEHICLE</th><th>INSURANCE EXPIRY</th><th>NEXT SERVICE</th><th>REVENUE LICENCE</th><th>EMISSIONS TEST</th><th>STATUS</th></tr></thead><tbody id="vehicle-rows"></tbody></table></div>
-            <div class="table-footer" id="table-footer" hidden><span id="result-count">Showing 0 vehicles</span><span>Dates reflect local calendar days</span></div>
-          </section>
-          <footer class="page-foot"><span>Fleet Ledger <span class="foot-dot">·</span> Shared vehicle register</span><span id="updated-label">Waiting for database</span></footer>
-        </section>
-      </main>
-    </div>
+        <div class="view" id="overview-view">
+          <div class="detail-grid">
+            <div class="left-column">
+              <section class="content-card vehicle-card" id="vehicle-summary"></section>
+              <section class="content-card service-card" id="service-summary"></section>
+            </div>
+            <section class="compliance-column"><div class="section-heading"><div><h2>Sri Lanka compliance</h2><p>Expiry dates and issuing providers</p></div><span class="auto-label">Auto-tracked</span></div><div id="compliance-list" class="compliance-list"></div></section>
+          </div>
+        </div>
 
-    <dialog id="vehicle-dialog" class="dialog"><form id="vehicle-form" method="dialog">
-      <div class="dialog-head"><div><div class="eyebrow">FLEET REGISTER</div><h2>Add a vehicle</h2><p>Enter vehicle details and the dates you want to track.</p></div><button type="button" class="close-button" id="close-dialog" aria-label="Close">×</button></div>
-      <div class="form-grid"><label class="field full"><span>Vehicle name <i>*</i></span><input name="name" required maxlength="100" placeholder="e.g. Toyota HiAce" /></label><label class="field"><span>Registration number <i>*</i></span><input name="registration" required maxlength="20" placeholder="e.g. ABC 123" /></label><label class="field"><span>Make</span><input name="make" maxlength="60" placeholder="e.g. Toyota" /></label><label class="field"><span>Model</span><input name="model" maxlength="60" placeholder="e.g. HiAce" /></label><label class="field"><span>Year</span><input name="year" type="number" min="1900" max="2100" placeholder="e.g. 2022" /></label><label class="field"><span>Insurance expiry</span><input name="insurance_expiry" type="date" /></label><label class="field"><span>Next service date</span><input name="service_due" type="date" /></label><label class="field"><span>Revenue licence expiry</span><input name="licence_expiry" type="date" /></label><label class="field"><span>Emissions test expiry</span><input name="emissions_expiry" type="date" /></label><label class="field full"><span>Notes</span><textarea name="notes" rows="2" maxlength="500" placeholder="Optional notes"></textarea></label></div>
-      <div class="form-error" id="form-error" role="alert" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" id="cancel-dialog">Cancel</button><button type="submit" class="primary-button" id="save-button">Save vehicle</button></div>
-    </form></dialog>
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  </body>
+        <div class="view" id="history-view" hidden>
+          <section class="content-card list-card"><div class="list-heading"><div><h2>Service history</h2><p>Completed maintenance and recorded odometer readings</p></div><button class="primary-button small" id="open-service"><span>＋</span> Log completed service</button></div><div id="service-history-list"></div></section>
+        </div>
+
+        <div class="view" id="documents-view" hidden>
+          <section class="content-card list-card"><div class="list-heading"><div><h2>Document vault</h2><p>Keep links to vehicle documents and track their expiry dates</p></div><button class="primary-button small" id="open-document"><span>＋</span> Add document</button></div><div id="document-list"></div></section>
+        </div>
+
+        <div id="empty-state" class="empty-state page-empty" hidden><div class="empty-illustration">▱</div><h3>Your fleet is ready to grow</h3><p>Add a vehicle to start tracking compliance, service intervals, and documents.</p><button class="primary-button small" id="empty-add">＋ Add vehicle</button></div>
+        <div id="error-state" class="state-message error-state page-error" hidden><span class="error-mark">!</span><div><b>Couldn’t connect to the fleet database</b><br /><span id="error-detail">Check the Supabase settings and run the database upgrade.</span><br /><button class="text-button" id="retry">Try again</button></div></div>
+        <footer class="page-foot"><span>Fleet Ledger <span class="foot-dot">·</span> Shared vehicle register</span><span id="updated-label">Waiting for database</span></footer>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="vehicle-dialog" class="dialog"><form id="vehicle-form">
+    <div class="dialog-head"><div><div class="eyebrow">FLEET REGISTER</div><h2 id="vehicle-dialog-title">Add a vehicle</h2><p id="vehicle-dialog-subtitle">Vehicle profile, service plan, and compliance details.</p></div><button type="button" class="close-button" data-close="vehicle-dialog" aria-label="Close">×</button></div>
+    <div class="form-grid"><label class="field full"><span>Vehicle name <i>*</i></span><input name="name" required maxlength="100" placeholder="e.g. Toyota Aqua G-Grade" /></label><label class="field"><span>Registration number <i>*</i></span><input name="registration" required maxlength="20" placeholder="e.g. WP CBG-4821" /></label><label class="field"><span>Make</span><input name="make" maxlength="60" placeholder="Toyota" /></label><label class="field"><span>Model</span><input name="model" maxlength="60" placeholder="Aqua G-Grade" /></label><label class="field"><span>Year</span><input name="year" type="number" min="1900" max="2100" placeholder="2018" /></label><label class="field"><span>Fuel type</span><select name="fuel_type"><option value="">Select fuel</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Electric</option><option>Other</option></select></label><label class="field"><span>Transmission</span><select name="transmission"><option value="">Select transmission</option><option>Automatic</option><option>Manual</option><option>CVT</option><option>Other</option></select></label><label class="field"><span>Current odometer (km)</span><input name="odometer_km" type="number" min="0" step="1" placeholder="78450" /></label><label class="field"><span>Service interval (km)</span><input name="service_interval_km" type="number" min="1" step="1" value="5000" /></label><label class="field"><span>Service interval (months)</span><input name="service_interval_months" type="number" min="1" step="1" value="6" /></label><label class="field"><span>Last service date</span><input name="last_service_date" type="date" /></label><label class="field"><span>Next service date</span><input name="service_due" type="date" /></label><label class="field"><span>Last service odometer (km)</span><input name="last_service_km" type="number" min="0" step="1" /></label><label class="field"><span>Insurance provider</span><input name="insurance_provider" maxlength="100" placeholder="Insurer name" /></label><label class="field"><span>Insurance expiry</span><input name="insurance_expiry" type="date" /></label><label class="field"><span>Revenue licence provider</span><input name="licence_provider" maxlength="100" placeholder="Issuing authority" /></label><label class="field"><span>Revenue licence expiry</span><input name="licence_expiry" type="date" /></label><label class="field"><span>Emissions test provider</span><input name="emissions_provider" maxlength="100" placeholder="Testing centre" /></label><label class="field"><span>Emissions test expiry</span><input name="emissions_expiry" type="date" /></label><label class="field full"><span>Vehicle notes</span><textarea name="notes" rows="2" maxlength="500" placeholder="Oil grade, special instructions, or other notes"></textarea></label></div>
+    <div class="form-error" id="vehicle-error" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="vehicle-dialog">Cancel</button><button type="submit" class="primary-button" id="save-vehicle">Save vehicle</button></div>
+  </form></dialog>
+
+  <dialog id="service-dialog" class="dialog narrow-dialog"><form id="service-form">
+    <div class="dialog-head"><div><div class="eyebrow">MAINTENANCE</div><h2>Log completed service</h2><p>Save the service details and odometer reading.</p></div><button type="button" class="close-button" data-close="service-dialog" aria-label="Close">×</button></div>
+    <div class="form-grid"><label class="field"><span>Service date <i>*</i></span><input name="service_date" type="date" required /></label><label class="field"><span>Odometer (km)</span><input name="odometer_km" type="number" min="0" /></label><label class="field full"><span>Work completed <i>*</i></span><input name="description" required maxlength="200" placeholder="e.g. Oil and filter change" /></label><label class="field"><span>Workshop / provider</span><input name="provider" maxlength="100" /></label><label class="field"><span>Cost</span><input name="cost" type="number" min="0" step="0.01" placeholder="Optional" /></label></div>
+    <div class="form-error" id="service-error" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="service-dialog">Cancel</button><button type="submit" class="primary-button" id="save-service">Save service</button></div>
+  </form></dialog>
+
+  <dialog id="odometer-dialog" class="dialog narrow-dialog"><form id="odometer-form">
+    <div class="dialog-head"><div><div class="eyebrow">VEHICLE READING</div><h2>Update odometer</h2><p>Record a new odometer reading for the active vehicle.</p></div><button type="button" class="close-button" data-close="odometer-dialog" aria-label="Close">×</button></div>
+    <div class="form-grid"><label class="field"><span>Odometer (km) <i>*</i></span><input name="odometer_km" type="number" min="0" step="1" required /></label><label class="field"><span>Reading date</span><input name="recorded_at" type="date" /></label><label class="field full"><span>Notes</span><input name="notes" maxlength="200" placeholder="Optional" /></label></div>
+    <div class="form-error" id="odometer-error" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="odometer-dialog">Cancel</button><button type="submit" class="primary-button" id="save-odometer">Save reading</button></div>
+  </form></dialog>
+
+  <dialog id="document-dialog" class="dialog narrow-dialog"><form id="document-form">
+    <div class="dialog-head"><div><div class="eyebrow">DOCUMENT VAULT</div><h2>Add document link</h2><p>Save a link to a digital vehicle document.</p></div><button type="button" class="close-button" data-close="document-dialog" aria-label="Close">×</button></div>
+    <div class="form-grid"><label class="field full"><span>Document title <i>*</i></span><input name="title" required maxlength="120" placeholder="e.g. Insurance certificate" /></label><label class="field"><span>Category</span><select name="category"><option>Insurance</option><option>Revenue licence</option><option>Emissions test</option><option>Service receipt</option><option>Registration</option><option>Other</option></select></label><label class="field"><span>Expiry date</span><input name="expires_on" type="date" /></label><label class="field"><span>Provider</span><input name="provider" maxlength="100" /></label><label class="field"><span>Document URL <i>*</i></span><input name="document_url" type="url" required placeholder="https://…" /></label></div>
+    <div class="form-error" id="document-error" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" data-close="document-dialog">Cancel</button><button type="submit" class="primary-button" id="save-document">Save document</button></div>
+  </form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
 </html>
