@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f5f4" />
+    <meta name="description" content="A shared fleet dashboard for vehicle compliance and service dates." />
+    <title>Fleet Ledger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="config.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Fleet Ledger home"><span class="brand-mark">F</span><span>fleet<span class="brand-light">ledger</span></span></a>
+        <div class="workspace-label">WORKSPACE</div>
+        <button class="nav-item active" type="button"><span class="nav-icon">▦</span> Fleet overview <span class="nav-count" id="nav-count">0</span></button>
+        <div class="sidebar-bottom"><div class="side-status"><span class="pulse"></span><span>Shared fleet workspace</span></div><div class="side-foot">VEHICLE OPERATIONS<br /><span>Fleet register</span></div></div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar"><div class="crumb">Fleet management <span>/</span> <b>Overview</b></div><div class="top-right"><span class="live-dot"></span><span>Live data</span><span class="avatar">FL</span></div></header>
+        <section class="page">
+          <div class="heading-row"><div><div class="eyebrow">YOUR FLEET AT A GLANCE</div><h1>Fleet overview</h1><p class="subtitle">Keep every vehicle, date, and document in one place.</p></div><button class="primary-button" id="open-add"><span>＋</span> Add vehicle</button></div>
+
+          <section class="summary-grid" aria-label="Fleet summary">
+            <article class="summary-card"><div class="summary-top"><span class="summary-label">Total vehicles</span><span class="stat-icon blue">▰</span></div><div class="summary-value" id="total-count">—</div><div class="summary-note">In your fleet register</div></article>
+            <article class="summary-card"><div class="summary-top"><span class="summary-label">Needs attention</span><span class="stat-icon amber">◷</span></div><div class="summary-value" id="attention-count">—</div><div class="summary-note">Expired or due in 30 days</div></article>
+            <article class="summary-card"><div class="summary-top"><span class="summary-label">Up to date</span><span class="stat-icon green">✓</span></div><div class="summary-value" id="healthy-count">—</div><div class="summary-note">All tracked dates current</div></article>
+          </section>
+
+          <section class="table-panel">
+            <div class="table-heading"><div><h2>Vehicle register</h2><p>Insurance, service, licence, and emissions dates</p></div><div class="table-tools"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search vehicles…" aria-label="Search vehicles" /></label><select id="status-filter" aria-label="Filter by status"><option value="all">All vehicles</option><option value="attention">Needs attention</option><option value="current">Up to date</option></select></div></div>
+            <div id="loading" class="state-message"><span class="spinner"></span> Loading your fleet…</div>
+            <div id="error-state" class="state-message error-state" hidden><span class="error-mark">!</span><div><b>Couldn’t connect to the fleet database</b><br /><span id="error-detail">Check the Supabase settings in config.js and try again.</span><br /><button class="text-button" id="retry">Try again</button></div></div>
+            <div id="empty-state" class="empty-state" hidden><div class="empty-illustration">▱</div><h3>No vehicles yet</h3><p>Add your first vehicle to start tracking key dates.</p><button class="primary-button small" id="empty-add">＋ Add vehicle</button></div>
+            <div class="table-wrap" id="table-wrap" hidden><table><thead><tr><th>VEHICLE</th><th>INSURANCE EXPIRY</th><th>NEXT SERVICE</th><th>REVENUE LICENCE</th><th>EMISSIONS TEST</th><th>STATUS</th></tr></thead><tbody id="vehicle-rows"></tbody></table></div>
+            <div class="table-footer" id="table-footer" hidden><span id="result-count">Showing 0 vehicles</span><span>Dates reflect local calendar days</span></div>
+          </section>
+          <footer class="page-foot"><span>Fleet Ledger <span class="foot-dot">·</span> Shared vehicle register</span><span id="updated-label">Waiting for database</span></footer>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="vehicle-dialog" class="dialog"><form id="vehicle-form" method="dialog">
+      <div class="dialog-head"><div><div class="eyebrow">FLEET REGISTER</div><h2>Add a vehicle</h2><p>Enter vehicle details and the dates you want to track.</p></div><button type="button" class="close-button" id="close-dialog" aria-label="Close">×</button></div>
+      <div class="form-grid"><label class="field full"><span>Vehicle name <i>*</i></span><input name="name" required maxlength="100" placeholder="e.g. Toyota HiAce" /></label><label class="field"><span>Registration number <i>*</i></span><input name="registration" required maxlength="20" placeholder="e.g. ABC 123" /></label><label class="field"><span>Make</span><input name="make" maxlength="60" placeholder="e.g. Toyota" /></label><label class="field"><span>Model</span><input name="model" maxlength="60" placeholder="e.g. HiAce" /></label><label class="field"><span>Year</span><input name="year" type="number" min="1900" max="2100" placeholder="e.g. 2022" /></label><label class="field"><span>Insurance expiry</span><input name="insurance_expiry" type="date" /></label><label class="field"><span>Next service date</span><input name="service_due" type="date" /></label><label class="field"><span>Revenue licence expiry</span><input name="licence_expiry" type="date" /></label><label class="field"><span>Emissions test expiry</span><input name="emissions_expiry" type="date" /></label><label class="field full"><span>Notes</span><textarea name="notes" rows="2" maxlength="500" placeholder="Optional notes"></textarea></label></div>
+      <div class="form-error" id="form-error" role="alert" hidden></div><div class="dialog-actions"><button type="button" class="secondary-button" id="cancel-dialog">Cancel</button><button type="submit" class="primary-button" id="save-button">Save vehicle</button></div>
+    </form></dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
