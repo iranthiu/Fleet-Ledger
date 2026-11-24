@@ -1,7 +1,7 @@
 (() => {
   const config = window.FLEET_CONFIG || {};
   const apiBase = `${String(config.supabaseUrl || "").replace(/\/$/, "")}/rest/v1`;
-  const cache = { vehicles: [], services: [], readings: [], documents: [], profile: null, activeId: null, view: "overview" };
+  const cache = { vehicles: [], services: [], readings: [], documents: [], profile: null, profiles: [], activeId: "all", view: "overview" };
   const $ = id => document.getElementById(id);
   let toastTimer;
   let editingVehicle = false;
@@ -31,18 +31,18 @@
   const setBusy = (id, label, busy) => { const b=$(id); b.disabled=busy; b.textContent=busy?label:b.dataset.label; };
   const statusInfo = date => { if (!date) return { text:"Not set", className:"neutral" }; const days=dayDiff(date); if(days<0) return {text:`Expired ${Math.abs(days)}d ago`,className:"expired"}; if(days<=30) return {text:days===0?"Due today":`Due in ${days}d`,className:"attention"}; return {text:`Valid (${days}d left)`,className:"current"}; };
   function complianceCard(title, provider, date, icon, kind) { const s=statusInfo(date); return `<article class="compliance-card ${s.className}"><div class="compliance-icon ${kind}">${icon}</div><div class="compliance-body"><div class="compliance-title-row"><div><h3>${title}</h3><p>${escapeHtml(provider || "Provider not recorded")}</p></div><span class="status ${s.className}">${s.text}</span></div><div class="compliance-foot"><span>Expiry: <b>${dateText(date)}</b></span></div></div></article>`; }
-  function lastService() { const v=activeVehicle(); if(!v) return null; return cache.services.filter(x=>String(x.vehicle_id)===String(v.id)).slice().sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date)))[0] || null; }
-  function latestReading() { const v=activeVehicle(); if(!v) return null; return cache.readings.filter(x=>String(x.vehicle_id)===String(v.id)).slice().sort((a,b)=>String(b.recorded_at).localeCompare(String(a.recorded_at)))[0] || null; }
-  function currentKm() { const v=activeVehicle(); return latestReading()?.odometer_km ?? v?.odometer_km ?? null; }
-  function servicePlan() {
-    const v=activeVehicle(); if(!v) return null;
-    const last=lastService();
+  function lastService(v=activeVehicle()) { if(!v) return null; return cache.services.filter(x=>String(x.vehicle_id)===String(v.id)).slice().sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date)))[0] || null; }
+  function latestReading(v=activeVehicle()) { if(!v) return null; return cache.readings.filter(x=>String(x.vehicle_id)===String(v.id)).slice().sort((a,b)=>String(b.recorded_at).localeCompare(String(a.recorded_at)))[0] || null; }
+  function currentKm(v=activeVehicle()) { return latestReading(v)?.odometer_km ?? v?.odometer_km ?? null; }
+  function servicePlan(v=activeVehicle()) {
+    if(!v) return null;
+    const last=lastService(v);
     const lastKm=last?.odometer_km ?? v.last_service_km;
     const lastDate=last?.service_date ?? v.last_service_date;
     const intervalKm=Number(v.service_interval_km || 5000);
     const intervalMonths=Number(v.service_interval_months || 6);
     const targetKm=lastKm == null ? null : Number(lastKm)+intervalKm;
-    const remainingKm=targetKm == null || currentKm() == null ? null : targetKm-Number(currentKm());
+    const remainingKm=targetKm == null || currentKm(v) == null ? null : targetKm-Number(currentKm(v));
     let targetDate=null;
     if(lastDate){const d=dateObj(lastDate); d.setMonth(d.getMonth()+intervalMonths); targetDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
     const remainingDays=targetDate ? dayDiff(targetDate) : (v.service_due ? dayDiff(v.service_due) : null);
@@ -51,11 +51,24 @@
   function renderVehiclePicker() {
     const select=$("vehicle-select");
     if(!cache.vehicles.length){select.innerHTML='<option value="">No vehicles</option>';return;}
-    select.innerHTML=cache.vehicles.map(v=>`<option value="${escapeHtml(v.id)}">${escapeHtml(v.registration)} — ${escapeHtml(v.name)}</option>`).join("");
-    if(!cache.activeId || !cache.vehicles.some(v=>String(v.id)===String(cache.activeId))) cache.activeId=cache.vehicles[0].id;
+    select.innerHTML='<option value="all">All vehicles</option>'+cache.vehicles.map(v=>`<option value="${escapeHtml(v.id)}">${escapeHtml(v.registration)} — ${escapeHtml(v.name)}</option>`).join("");
+    if(!cache.activeId || (cache.activeId!=="all"&&!cache.vehicles.some(v=>String(v.id)===String(cache.activeId)))) cache.activeId="all";
     select.value=String(cache.activeId);
   }
   function renderSummary() {
+    if(cache.activeId==="all") {
+      const rows=cache.vehicles.map(base=>({...base,...(cache.profiles.find(p=>String(p.vehicle_id)===String(base.id))||{}),id:base.id}));
+      const compliance=rows.flatMap(v=>[{vehicle:v,name:"Insurance",date:v.insurance_expiry},{vehicle:v,name:"Revenue licence",date:v.licence_expiry},{vehicle:v,name:"Emissions test",date:v.emissions_expiry}].filter(x=>x.date)).sort((a,b)=>dateObj(a.date)-dateObj(b.date));
+      const urgentExpiry=compliance.filter(x=>dayDiff(x.date)<=30).length;
+      const urgentServices=rows.filter(v=>{const p=servicePlan(v);return (p.remainingKm!=null&&p.remainingKm<=500)||(p.remainingDays!=null&&p.remainingDays<=30);}).length;
+      $("health-label").textContent="Fleet health";$("health-value").textContent=rows.length?`${urgentExpiry+urgentServices} actions`:"—";$("health-card").dataset.state=(urgentExpiry+urgentServices)===0?"current":"attention";$("health-note").textContent=`${rows.length} vehicles · ${urgentExpiry} expiry alerts · ${urgentServices} service alerts`;
+      $("expiry-label").textContent="Upcoming expiries";$("expiry-value").textContent=urgentExpiry?`${urgentExpiry} due soon`:(compliance.length?"All current":"—");$("expiry-card").dataset.state=urgentExpiry?"attention":(compliance.length?"current":"neutral");$("expiry-note").textContent=`${compliance.length} compliance dates tracked`;
+      $("service-target-label").textContent="Service attention";$("service-target-value").textContent=urgentServices?`${urgentServices} due soon`:(rows.length?"On schedule":"—");$("service-target-card").dataset.state=urgentServices?"attention":(rows.length?"current":"neutral");$("service-target-note").textContent=`${rows.length} service plans tracked`;
+      $("odometer-label").textContent="Fleet odometer coverage";$("odometer-value").textContent=`${rows.filter(v=>currentKm(v)!=null).length} / ${rows.length}`;$("odometer-note").textContent="Vehicles with a recorded km reading";$("odometer-card").dataset.state=rows.length&&rows.every(v=>currentKm(v)!=null)?"current":"neutral";
+      $("open-odometer").hidden=true;
+      return;
+    }
+    $("health-label").textContent="Active vehicle health";$("expiry-label").textContent="Next statutory expiry";$("service-target-label").textContent="Next service target";$("odometer-label").textContent="Current odometer";$("open-odometer").hidden=false;
     const v=activeVehicle();
     if(!v){$("health-value").textContent="—";$("health-note").textContent="Add a vehicle to get started";$("expiry-value").textContent="—";$("expiry-note").textContent="No compliance records";$("service-target-value").textContent="—";$("service-target-note").textContent="No service plan";$("odometer-value").textContent="—";$("odometer-note").textContent="No reading recorded";return;}
     const compliance=[{name:"Insurance",date:v.insurance_expiry},{name:"Revenue licence",date:v.licence_expiry},{name:"Emissions test",date:v.emissions_expiry}].filter(x=>x.date).sort((a,b)=>dateObj(a.date)-dateObj(b.date));
@@ -69,12 +82,27 @@
     $("odometer-card").dataset.state=currentKm()==null?"neutral":"current";$("odometer-value").textContent=fmtKm(currentKm());$("odometer-note").textContent=latestReading()?`Updated ${dateText(latestReading().recorded_at)}`:"Latest recorded reading";
   }
   function renderOverview() {
+    const fleet=$("fleet-overview"),detail=$("vehicle-detail-view");
+    if(cache.activeId==="all") {
+      $("overview-view").hidden=false;$("health-cards").hidden=false;$("empty-state").hidden=cache.vehicles.length>0;fleet.hidden=!cache.vehicles.length;detail.hidden=true;
+      if(!cache.vehicles.length){$("empty-state").hidden=false;$("empty-state").querySelector("h3").textContent="Your fleet is ready to grow";renderSummary();return;}
+      const rows=cache.vehicles.map(base=>({...base,...(cache.profiles.find(p=>String(p.vehicle_id)===String(base.id))||{}),id:base.id}));
+      $("fleet-rows").innerHTML=rows.map(v=>{
+        const compliance=[{date:v.insurance_expiry},{date:v.licence_expiry},{date:v.emissions_expiry}].filter(x=>x.date).sort((a,b)=>dateObj(a.date)-dateObj(b.date));
+        const p=servicePlan(v);const serviceUrgent=(p.remainingKm!=null&&p.remainingKm<=500)||(p.remainingDays!=null&&p.remainingDays<=30);const expiryUrgent=compliance.some(x=>dayDiff(x.date)<=30);const complete=compliance.length===3&&p.targetDate!=null&&currentKm(v)!=null;const status=expiryUrgent||serviceUrgent?(compliance.some(x=>dayDiff(x.date)<0)||(p.remainingKm!=null&&p.remainingKm<0)||(p.remainingDays!=null&&p.remainingDays<0)?"expired":"attention"):complete?"current":"neutral";
+        const serviceText=p.remainingKm!=null?`${Math.max(0,p.remainingKm).toLocaleString()} km left`:p.targetDate?dateText(p.targetDate):"Not set";const serviceDate=p.targetDate?` · ${dateText(p.targetDate)}`:"";
+        const displayDate=d=>d?`${dateText(d)}<small>${statusInfo(d).text}</small>`:"Not set";
+        return `<button class="fleet-row" type="button" data-select-id="${escapeHtml(v.id)}"><span class="fleet-vehicle"><b>${escapeHtml(v.registration)}</b><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml([v.make,v.model].filter(Boolean).join(" ")||"Fleet vehicle")}</small></span><span>${displayDate(v.insurance_expiry)}</span><span>${displayDate(v.licence_expiry)}</span><span>${displayDate(v.emissions_expiry)}</span><span>${escapeHtml(serviceText)}<small>${escapeHtml(serviceDate|| (p.remainingDays!=null?`${p.remainingDays} days remaining`:"Service target"))}</small></span><span>${escapeHtml(fmtKm(currentKm(v)))}</span><span><i class="status ${status}">${status==="expired"?"Overdue":status==="attention"?"Due soon":status==="neutral"?"Add details":"On track"}</i></span></button>`;
+      }).join("");
+      renderSummary();return;
+    }
+    fleet.hidden=true;detail.hidden=false;$("empty-state").hidden=true;
     const v=activeVehicle();
     if(!v){$("overview-view").hidden=true;$("health-cards").hidden=true;$("empty-state").hidden=false;return;}
     $("empty-state").hidden=true;$("health-cards").hidden=false;
     const specs=[v.year,v.fuel_type,v.transmission].filter(Boolean).join(" · ") || "Vehicle details";
     $("vehicle-summary").innerHTML=`<div class="vehicle-card-top"><span class="reg-pill">▰ ${escapeHtml(v.registration)}</span><span class="vehicle-specs">${escapeHtml(specs)}</span><button class="text-button" id="edit-vehicle-details">✎ Edit details</button><button class="text-button" id="odometer-from-card">↻ Update km</button></div><h2>${escapeHtml(v.name)}</h2><p class="vehicle-subtitle">${escapeHtml([v.make,v.model].filter(Boolean).join(" ")||"Fleet vehicle")}</p><div class="vehicle-note">ⓘ ${escapeHtml(v.notes||"Add vehicle notes such as oil grade or maintenance instructions.")}</div>`;
-    const p=servicePlan();
+    const p=servicePlan(v);
     const kmTotal=p?.intervalKm||5000; const kmUsed=p?.lastKm!=null&&currentKm()!=null?Math.max(0,Number(currentKm())-Number(p.lastKm)):0; const kmRemaining=p?.remainingKm; const kmPct=Math.min(100,Math.round(kmUsed/kmTotal*100)); const kmState=kmRemaining==null?"neutral":kmRemaining<0?"overdue":kmRemaining<=500?"attention":"current";
     const dayTotal=(p?.intervalMonths||6)*30; const daysUsed=p?.lastDate&&p?.targetDate?Math.max(0,dayTotal-(p.remainingDays??0)):0; const dayPct=Math.min(100,Math.round(daysUsed/dayTotal*100)); const dayState=p.remainingDays==null?"neutral":p.remainingDays<0?"overdue":p.remainingDays<=30?"attention":"current";
     const kmText=kmRemaining==null?"Set last service km":kmRemaining<0?`${Math.abs(kmRemaining).toLocaleString()} km overdue`:`${kmRemaining.toLocaleString()} km left`;
@@ -85,12 +113,14 @@
     $("service-from-card")?.addEventListener("click",()=>showDialog("service-dialog")); $("odometer-from-card")?.addEventListener("click",()=>showDialog("odometer-dialog")); $("edit-vehicle-details")?.addEventListener("click",()=>openVehicleForm(true));
   }
   function renderHistory() {
-    const v=activeVehicle(); const rows=cache.services.filter(x=>String(x.vehicle_id)===String(v?.id)).slice().sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date)));
+    $("open-service").disabled=cache.activeId==="all";$("open-service").title=cache.activeId==="all"?"Select a vehicle to log a service record":"";
+    const v=activeVehicle(); const rows=cache.services.filter(x=>cache.activeId==="all"||String(x.vehicle_id)===String(v?.id)).slice().sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date)));
     $("service-history-list").innerHTML=rows.length?`<div class="history-table"><div class="history-head"><span>DATE</span><span>WORK COMPLETED</span><span>ODOMETER</span><span>PROVIDER</span><span>COST</span></div>${rows.map(x=>`<div class="history-row"><span>${dateText(x.service_date)}</span><b>${escapeHtml(x.description)}</b><span>${fmtKm(x.odometer_km)}</span><span>${escapeHtml(x.provider||"—")}</span><span>${x.cost==null?"—":Number(x.cost).toLocaleString(undefined,{style:"currency",currency:"LKR",maximumFractionDigits:2})}</span></div>`).join("")}</div>`:'<div class="empty-inline"><h3>No service records yet</h3><p>Log completed maintenance to start a history for this vehicle.</p></div>';
     $("service-count").textContent=rows.length;
   }
   function renderDocuments() {
-    const v=activeVehicle(); const rows=cache.documents.filter(x=>String(x.vehicle_id)===String(v?.id)).slice().sort((a,b)=>String(a.title).localeCompare(String(b.title)));
+    $("open-document").disabled=cache.activeId==="all";$("open-document").title=cache.activeId==="all"?"Select a vehicle to add a document":"";
+    const v=activeVehicle(); const rows=cache.documents.filter(x=>cache.activeId==="all"||String(x.vehicle_id)===String(v?.id)).slice().sort((a,b)=>String(a.title).localeCompare(String(b.title)));
     $("document-list").innerHTML=rows.length?`<div class="history-table document-table"><div class="history-head"><span>DOCUMENT</span><span>CATEGORY</span><span>PROVIDER</span><span>EXPIRY</span><span>LINK</span></div>${rows.map(x=>`<div class="history-row"><b>${escapeHtml(x.title)}</b><span>${escapeHtml(x.category)}</span><span>${escapeHtml(x.provider||"—")}</span><span>${dateText(x.expires_on)}</span><a href="${safeUrl(x.document_url)}" target="_blank" rel="noopener noreferrer">Open ↗</a></div>`).join("")}</div>`:'<div class="empty-inline"><h3>No documents saved</h3><p>Add a link to an insurance certificate, licence, test report, or service receipt.</p></div>';
     $("document-count").textContent=rows.length;
   }
@@ -102,6 +132,15 @@
     if(cache.view==="overview")renderOverview(); else if(cache.view==="history")renderHistory(); else renderDocuments();
   }
   async function loadVehicleData() {
+    if(cache.activeId==="all") {
+      const [services,readings,documents,profiles]=await Promise.all([
+        request("service_records","GET",{select:"*",order:"service_date.desc"}),
+        request("odometer_readings","GET",{select:"*",order:"recorded_at.desc"}),
+        request("vehicle_documents","GET",{select:"*",order:"created_at.desc"}),
+        request("vehicle_profiles","GET",{select:"*",order:"created_at.desc"})
+      ]);
+      cache.services=services||[];cache.readings=readings||[];cache.documents=documents||[];cache.profiles=profiles||[];cache.profile=null;renderSummary();renderView();return;
+    }
     const v=activeVehicle(); if(!v){cache.services=[];cache.readings=[];cache.documents=[];cache.profile=null;renderView();return;}
     const filter={select:"*",vehicle_id:`eq.${v.id}`};
     const [services,readings,documents,profiles]=await Promise.all([
@@ -109,7 +148,7 @@
       request("odometer_readings","GET",{...filter,order:"recorded_at.desc"}),
       request("vehicle_documents","GET",{...filter,order:"created_at.desc"}), request("vehicle_profiles","GET",{...filter,order:"created_at.desc",limit:"1"})
     ]);
-    cache.services=services||[];cache.readings=readings||[];cache.documents=documents||[];cache.profile=profiles?.[0]||null;const selected=$("vehicle-select").selectedOptions[0];const active=activeVehicle();if(selected&&active)selected.textContent=`${active.registration} — ${active.name}`;renderView();
+    cache.services=services||[];cache.readings=readings||[];cache.documents=documents||[];cache.profile=profiles?.[0]||null;cache.profiles=cache.profile?[cache.profile]:[];const selected=$("vehicle-select").selectedOptions[0];const active=activeVehicle();if(selected&&active)selected.textContent=`${active.registration} — ${active.name}`;renderSummary();renderView();
   }
   async function loadFleet() {
     $("error-state").hidden=true;
@@ -126,7 +165,7 @@
     catch(e){error.textContent=e.message||"Could not save this record.";error.hidden=false;}
     finally{button.disabled=false;button.textContent=original;}
   }
-  document.addEventListener("click",event=>{const button=event.target.closest("[data-view]");if(button)setActiveView(button.dataset.view);});
+  document.addEventListener("click",event=>{const row=event.target.closest("[data-select-id]");if(row){cache.activeId=row.dataset.selectId;$("vehicle-select").value=String(cache.activeId);loadVehicleData().catch(error=>showError(error.message));return;}const button=event.target.closest("[data-view]");if(button)setActiveView(button.dataset.view);});
   document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>closeDialog(button.dataset.close)));
   $("open-vehicle").addEventListener("click",()=>openVehicleForm(false)); $("empty-add").addEventListener("click",()=>openVehicleForm(false));
   $("open-service").addEventListener("click",()=>showDialog("service-dialog")); $("open-document").addEventListener("click",()=>showDialog("document-dialog")); $("open-odometer").addEventListener("click",()=>showDialog("odometer-dialog"));

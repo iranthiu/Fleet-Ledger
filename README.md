@@ -1,25 +1,22 @@
-# Fleet Ledger
+# Fleet Ledger enhanced update
 
-A responsive fleet register for tracking insurance expiry, next service date, revenue licence expiry, and emissions test expiry. This static site is suitable for GitHub Pages; Supabase provides the shared database.
+This folder contains a UI and schema update inspired by the supplied vehicle-management screenshot.
 
-## Set up the shared database
+## Added
 
-1. Create a Supabase project at [supabase.com](https://supabase.com/).
-2. In the project dashboard, open **SQL Editor**, paste in `supabase-setup.sql`, and run it.
-3. In **Project Settings → API Keys** (or the project’s **Connect** dialog), copy the Project URL and the **publishable key** (starts with `sb_publishable_`). The app sends this key in the `apikey` header; it is not a user JWT.
-4. Open `config.js` and replace `YOUR_PROJECT_ID` and `YOUR_SUPABASE_ANON_KEY` with those values.
+- Vehicle profile fields for fuel type, transmission, current odometer, and service intervals.
+- Insurance, revenue licence, and emissions-test provider details.
+- A dual-trigger service target based on kilometres and months.
+- Service history, odometer readings, and a document vault for document links.
+- A vehicle selector and health, expiry, service, and odometer summary cards.
+- An all-vehicles overview by default, with fleet-wide compliance and service status. Selecting a vehicle opens its individual details.
+- An update-details action for existing vehicles. It records a new profile revision, so the shared app does not need public row-edit permission.
 
-The database policies allow anyone on the internet to read vehicle details and add records without signing in. The app does not provide edit or delete controls. Do not store sensitive personal information in this public fleet register.
+## Apply to the GitHub Pages repository
 
-## Publish with GitHub Pages
+1. Back up the repository first.
+2. In Supabase SQL Editor, run `supabase-upgrade.sql`. It adds columns and tables without replacing existing vehicle rows.
+3. Replace the repository-root `index.html`, `app.js`, and `styles.css` with these files. Keep the existing `config.js` and its project URL/publishable key.
+4. Commit and push. GitHub Pages will publish the updated app.
 
-1. Create a GitHub repository and upload the files in this folder.
-2. In the repository, open **Settings → Pages**.
-3. Under **Build and deployment**, select **Deploy from a branch**, then choose `main` and `/ (root)`.
-4. Save and open the published URL shown in the Pages section.
-
-Because this is a static site, `config.js` must be present in the published repository. The Supabase anon key is intended for browser use; database policies control the public access described above. Never put a Supabase `service_role` key in the browser app.
-
-## Local preview
-
-Open `index.html` in a browser after configuring `config.js`, or serve the folder with any static file server.
+The existing public read/add access remains the model for the new records. The document vault stores links to documents rather than uploading files. The SQL upgrade is additive and preserves existing vehicle rows.

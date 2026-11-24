@@ -29,22 +29,23 @@
     <main class="main">
       <header class="topbar"><div class="crumb">Fleet management <span>/</span> <b id="breadcrumb-view">Overview</b></div><div class="top-right"><span class="live-dot"></span><span>Live data</span><span class="avatar">FL</span></div></header>
       <section class="page">
-        <div class="heading-row"><div><div class="eyebrow">FLEET OPERATIONS</div><h1 id="page-title">Overview &amp; compliance</h1><p class="subtitle">Vehicle health, service planning, and statutory dates in one place.</p></div><div class="page-actions"><label class="vehicle-picker"><span>ACTIVE VEHICLE</span><select id="vehicle-select" aria-label="Select vehicle"><option value="">Loading fleet…</option></select></label><button class="primary-button" id="open-vehicle"><span>＋</span> Add vehicle</button></div></div>
+        <div class="heading-row"><div><div class="eyebrow">FLEET OPERATIONS</div><h1 id="page-title">Overview &amp; compliance</h1><p class="subtitle">Vehicle health, service planning, and statutory dates in one place.</p></div><div class="page-actions"><label class="vehicle-picker"><span>VEHICLE VIEW</span><select id="vehicle-select" aria-label="Select all vehicles or a single vehicle"><option value="">Loading fleet…</option></select></label><button class="primary-button" id="open-vehicle"><span>＋</span> Add vehicle</button></div></div>
 
         <div class="summary-grid four-cards" id="health-cards">
-          <article class="summary-card" id="health-card" data-state="neutral"><div class="summary-top"><span class="summary-label">Active vehicle health</span><span class="stat-icon green">✓</span></div><div class="summary-value compact" id="health-value">—</div><div class="summary-note" id="health-note">Select a vehicle</div></article>
-          <article class="summary-card" id="expiry-card" data-state="neutral"><div class="summary-top"><span class="summary-label">Next statutory expiry</span><span class="stat-icon amber">◷</span></div><div class="summary-value compact" id="expiry-value">—</div><div class="summary-note" id="expiry-note">Insurance, licence, or emissions</div></article>
-          <article class="summary-card" id="service-target-card" data-state="neutral"><div class="summary-top"><span class="summary-label">Next service target</span><span class="stat-icon blue">⚒</span></div><div class="summary-value compact" id="service-target-value">—</div><div class="summary-note" id="service-target-note">Mileage or date trigger</div></article>
-          <article class="summary-card" id="odometer-card" data-state="neutral"><div class="summary-top"><span class="summary-label">Current odometer</span><button class="inline-button" id="open-odometer">Update km →</button></div><div class="summary-value compact" id="odometer-value">—</div><div class="summary-note" id="odometer-note">Latest recorded reading</div></article>
+          <article class="summary-card" id="health-card" data-state="neutral"><div class="summary-top"><span class="summary-label" id="health-label">Active vehicle health</span><span class="stat-icon green">✓</span></div><div class="summary-value compact" id="health-value">—</div><div class="summary-note" id="health-note">Select a vehicle</div></article>
+          <article class="summary-card" id="expiry-card" data-state="neutral"><div class="summary-top"><span class="summary-label" id="expiry-label">Next statutory expiry</span><span class="stat-icon amber">◷</span></div><div class="summary-value compact" id="expiry-value">—</div><div class="summary-note" id="expiry-note">Insurance, licence, or emissions</div></article>
+          <article class="summary-card" id="service-target-card" data-state="neutral"><div class="summary-top"><span class="summary-label" id="service-target-label">Next service target</span><span class="stat-icon blue">⚒</span></div><div class="summary-value compact" id="service-target-value">—</div><div class="summary-note" id="service-target-note">Mileage or date trigger</div></article>
+          <article class="summary-card" id="odometer-card" data-state="neutral"><div class="summary-top"><span class="summary-label" id="odometer-label">Current odometer</span><button class="inline-button" id="open-odometer">Update km →</button></div><div class="summary-value compact" id="odometer-value">—</div><div class="summary-note" id="odometer-note">Latest recorded reading</div></article>
         </div>
 
         <div class="view" id="overview-view">
-          <div class="detail-grid">
+          <section class="content-card list-card fleet-overview" id="fleet-overview" hidden><div class="list-heading"><div><h2>Fleet vehicles</h2><p>Choose a vehicle row to open its individual compliance and service details.</p></div></div><div class="history-table fleet-table"><div class="fleet-head"><span>VEHICLE</span><span>INSURANCE</span><span>REVENUE LICENCE</span><span>EMISSIONS TEST</span><span>NEXT SERVICE</span><span>ODOMETER</span><span>STATUS</span></div><div id="fleet-rows"></div></div></section>
+          <div class="detail-grid" id="vehicle-detail-view">
             <div class="left-column">
               <section class="content-card vehicle-card" id="vehicle-summary"></section>
               <section class="content-card service-card" id="service-summary"></section>
             </div>
-            <section class="compliance-column"><div class="section-heading"><div><h2>Compliance</h2><p>Expiry dates and issuing providers</p></div><span class="auto-label">Auto-tracked</span></div><div id="compliance-list" class="compliance-list"></div></section>
+            <section class="compliance-column"><div class="section-heading"><div><h2>Sri Lanka compliance</h2><p>Expiry dates and issuing providers</p></div><span class="auto-label">Auto-tracked</span></div><div id="compliance-list" class="compliance-list"></div></section>
           </div>
         </div>
 
